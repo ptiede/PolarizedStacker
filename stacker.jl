@@ -56,10 +56,10 @@ end
 function _mkdf(echain, keys)
     df = DataFrame()
     for (i,k) in enumerate(keys)
-        insertcols!(df, Symbol("μ_"*String(k))=>getindex.(echain.μ, i))
+        insertcols!(df, Symbol("mean_"*String(k))=>getindex.(echain.μ, i))
     end
     for (i,k) in enumerate(keys)
-        insertcols!(df, Symbol("σ_"*String(k))=>getindex.(echain.σ, i))
+        insertcols!(df, Symbol("stdd_"*String(k))=>getindex.(echain.σ, i))
     end
     df
 end

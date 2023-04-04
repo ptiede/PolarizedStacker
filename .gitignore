@@ -26,4 +26,4 @@ Manifest.toml
 ## Local stuff
 LinPol
 CirPol
-Data/*
+./Data/*
