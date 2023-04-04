@@ -4,6 +4,12 @@ Polarized Snapshot Image Hierarchical Stacking
 This package will read in a number of eht-imaging snapshot files and stack the posteriors together using an approximate hierarchical modeling scheme. Please see 
 [EHTC IV SgrA*](https://iopscience.iop.org/article/10.3847/2041-8213/ac6736) for more information. 
 
+## Installation
+
+To install this package you need to first have a local version of Julia. To install Julia I recommend the juliaup package https://github.com/JuliaLang/juliaup and installing the Julia 1.8 series `juliaup add 1.8.5`. Once Julia is installed clone the repo and you should be good to go.
+
+## Running the script
+
 To run the stacker you need to run
 ```
 juila -p NCORES main.jl directorylist priors_list.txt
