@@ -1,0 +1,21 @@
+# Model number, parameter name, prior type, min, max, angular y/n
+0 d flat 30.0 70.0 n
+0 alpha flat 5.0 30.0 n
+0 beta1-re flat -0.5 0.5 n
+0 beta1-im flat -0.5 0.5 n
+0 beta2-re flat -0.5 0.5 n
+0 beta2-im flat -0.5 0.5 n
+0 betapol-3-re flat -1.0 1.0 n
+0 betapol-3-im flat -1.0 1.0 n
+0 betapol-2-re flat -1.0 1.0 n
+0 betapol-2-im flat -1.0 1.0 n
+0 betapol-1-re flat -1.0 1.0 n
+0 betapol-1-im flat -1.0 1.0 n
+0 betapol0-re flat -1.0 1.0 n
+0 betapol0-im flat -1.0 1.0 n
+0 betapol1-re flat -1.0 1.0 n
+0 betapol1-im flat -1.0 1.0 n
+0 betapol2-re flat -1.0 1.0 n
+0 betapol2-im flat -1.0 1.0 n
+0 betapol3-re flat -1.0 1.0 n
+0 betapol3-im flat -1.0 1.0 n
