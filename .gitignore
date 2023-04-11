@@ -27,3 +27,6 @@ Manifest.toml
 LinPol
 CirPol
 ./Data/*
+.CondaPkg
+CPTest
+LPTest
