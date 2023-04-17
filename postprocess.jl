@@ -7,7 +7,7 @@ ehtim = pyimport("ehtim")
 
 function construct_meanstd(df, labels::Vector{String})
     means = DataFrame([Pair(l,df[!, "mean_"*l]) for l in labels])
-    std = DataFrame([Pair(l, df[!, "sigma_"*l]) for l in labels])
+    std = DataFrame([Pair(l, df[!, "stdd_"*l]) for l in labels])
     return means, std
 end
 
