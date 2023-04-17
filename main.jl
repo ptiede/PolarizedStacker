@@ -59,5 +59,5 @@ Runs the stacker on the list of dirs passed as a command line argument
     pmap(od) do d
         process(d, p, dirname(d); restart)
     end
-    return
+    return nothing
 end

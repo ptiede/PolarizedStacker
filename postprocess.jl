@@ -1,8 +1,13 @@
+using Pkg; Pkg.activate(@__DIR__)
+Pkg.instantiate()
+Pkg.precompile()
+
 using PythonCall
 using Printf
 using Tables
 using CSV
 using DataFrames
+using Comonicon
 ehtim = pyimport("ehtim")
 
 function construct_meanstd(df, labels::Vector{String})
@@ -106,4 +111,27 @@ function postprocess(fstack, outdir, linpol=true; burnfrac=0.75, nsamples=100)
     ms, ss = construct_meanstd(dfsub)
     linpol  &&(@info "Using Linpol"; return sample_images_lp(outdir, ms))
     !linpol &&(@info "Using Cirpol"; return sample_images_cp(outdir, ms))
+end
+
+"""
+    postprocess the stacking results producing a set of image files
+
+# Args
+
+-  `s`: The path to the csv file of the stacking results
+-  `o`: The directory where you want to save the images
+
+# Flags
+
+- `-c, --circ`: A flag that signals the stacking was using circular pol. Otherwise we assume linear
+
+
+# Options
+
+- `-n, --nsamples=<int>`: The number of images sampled. Default is 500
+
+
+"""
+@main function main(s::String, o::String; circ::Bool=false, nsamples::Int=500)
+    postprocess(s, o, !(circ); nsamples=nsamples)
 end

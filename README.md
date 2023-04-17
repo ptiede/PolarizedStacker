@@ -30,3 +30,18 @@ The output of the stacking will be in `directorylist/StackedResults` and will co
 1.  `stacker_chain.h5` which is a HDF5 file that groups all the snapshot results together
 2.  `stacker_chain_ha_trunc.csv` which is a CSV file containing the chain of the results. Note this is the entire chain I would typically just recommend taking the last quarter of it for parameter inference.
 3.  `stacker_chain_ckpt.jld2` is the checkpoint file for sampling that can be used to restart the script. 
+
+## Post-processing
+
+To post-process the images we have included a `postprocess` script that will convert a stacker result to a set of images.
+To run this do
+```
+julia postprocess.jl "path/to/stacker_chain_ha_trunc.csv" "path/to/output/directory" 
+```
+if the results are for a linear polarized images and 
+```
+julia postprocess.jl "path/to/stacker_chain_ha_trunc.csv" "path/to/output/directory" -c
+```
+for a circularly polarized image. By default this will produce 500 fits images in the output directory, but this can be changed with the `-n` option. 
+
+
