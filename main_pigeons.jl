@@ -19,12 +19,12 @@ Pkg.precompile()
 end
 
 
-include(joinpath(filedir, "stacker.jl"))
+include(joinpath(filedir, "stacker_pigeons.jl"))
 include(joinpath(filedir, "res_to_chainh5.jl"))
 
 
 
-@everywhere include(joinpath(filedir, "stacker.jl"))
+@everywhere include(joinpath(filedir, "stacker_pigeons.jl"))
 @everywhere include(joinpath(filedir, "res_to_chainh5.jl"))
 
 

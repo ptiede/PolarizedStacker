@@ -101,10 +101,10 @@ function sample_images_lp(outdir, chain)
     end
 end
 
-function postprocess(fstack, outdir, linpol=true; burnfrac=0.75, nsamples=100)
+function postprocess(fstack, outdir, linpol=true; burnfrac=0.1, nsamples=100)
     df = CSV.File(fstack) |> DataFrame
-    nstart = ceil(Int, nrow(df)*burnfrac)
-    step = ceil(Int, (nrow(df) - nstart)/(nsamples))
+    nstart = floor(Int, nrow(df)*burnfrac)
+    step = floor(Int, (nrow(df) - nstart)/(nsamples))
     nrange = range(nstart, length=nsamples, step=step)
     @info length(nrange)
     dfsub = df[nrange, :]

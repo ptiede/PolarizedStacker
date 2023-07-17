@@ -30,3 +30,9 @@ CirPol
 .CondaPkg
 CPTest
 LPTest
+results
+Data/teststack
+Data/
+./Data
+TestLinPol
+
