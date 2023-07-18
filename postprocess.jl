@@ -78,7 +78,11 @@ end
 
 function make_image(r, cp)
     m = ehtim.model.Model()
-    p  = ifelse(cp, extract_cp_params(r), extract_lp_params(r))
+    p  = if cp
+            extract_cp_params(r)
+        else
+            extract_lp_params(r)
+        end
     m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
     img = m.make_image(100.0*ehtim.RADPERUAS, 64)
     return img
@@ -120,7 +124,7 @@ function postprocess(fstack, outdir, prior, cirpol=true; burnfrac=0.1, nsamples=
     dfsub = df[nrange, :]
     ms, ss = construct_meanstd(dfsub)
     @info "Is this a circular polarized stacking: $(cirpol)"
-    return sample_images(outdir, ms, ss, prior, cp)
+    return sample_images(outdir, ms, ss, prior, cirpol)
 end
 
 """

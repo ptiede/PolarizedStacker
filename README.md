@@ -36,11 +36,11 @@ The output of the stacking will be in `directorylist/StackedResults` and will co
 To post-process the images we have included a `postprocess` script that will convert a stacker result to a set of images.
 To run this do
 ```
-julia postprocess.jl "path/to/stacker_chain_ha_trunc.csv" "path/to/output/directory" 
+julia postprocess.jl "path/to/stacker_chain_ha_trunc.csv" "path/to/output/directory" "path/to/prior_list.txt" 
 ```
 if the results are for a linear polarized images and 
 ```
-julia postprocess.jl "path/to/stacker_chain_ha_trunc.csv" "path/to/output/directory" -c
+julia postprocess.jl "path/to/stacker_chain_ha_trunc.csv" "path/to/output/directory" "path/to/prior_list" -c
 ```
 for a circularly polarized image. By default this will produce 500 fits images in the output directory, but this can be changed with the `-n` option. 
 
