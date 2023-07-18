@@ -8,7 +8,10 @@ using Tables
 using CSV
 using DataFrames
 using Comonicon
+using EHTModelStacker
 ehtim = pyimport("ehtim")
+
+include("stacker.jl")
 
 function construct_meanstd(df, labels::Vector{String})
     means = DataFrame([Pair(l,df[!, "mean_"*l]) for l in labels])
@@ -43,20 +46,6 @@ function extract_cp_params(x::DataFrameRow)
     return (; d, x0, y0, beta_list, beta_list_cpol, alpha)
 end
 
-function sample_images_cp(outdir, chain)
-    mkpath(outdir)
-    i = 0
-    for r in eachrow(chain)
-        m = ehtim.model.Model()
-        p  = extract_cp_params(r)
-        m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_cpol=p.beta_list_cpol)
-        img = m.make_image(100.0*ehtim.RADPERUAS, 128)
-        fname = @sprintf "image_%05d.fits" i
-        img.save_fits(joinpath(outdir, fname))
-        i += 1
-    end
-end
-
 
 function extract_lp_params(x::DataFrameRow)
     d = Tables.getcolumn(x, :d)
@@ -87,21 +76,42 @@ function extract_lp_params(x::DataFrameRow)
     return (; d, x0, y0, beta_list, beta_list_pol, alpha)
 end
 
-function sample_images_lp(outdir, chain)
+function make_image(r, cp)
+    m = ehtim.model.Model()
+    p  = ifelse(cp, extract_cp_params(r), extract_lp_params(r))
+    m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
+    img = m.make_image(100.0*ehtim.RADPERUAS, 64)
+    return img
+end
+
+function make_samples(m, s, mins, maxs, wrapped; nsamples=100)
+    name  = Symbol.(names(m))
+    dists = make_marginal.(Tuple(m), Tuple(s), mins, maxs, wrapped)
+    return DataFrame([NamedTuple{Tuple(name)}(Tuple(rand.(dists))) for _ in 1:nsamples])
+end
+
+function sample_images(outdir, ms, ss, prior_file, cp; nsamples=500)
     mkpath(outdir)
+    prior = read_prior_table(prior_file)
+    mins, maxs, wrapped = extract_prior(prior, Symbol.(names(ms)))
     i = 0
-    for r in eachrow(chain)
-        m = ehtim.model.Model()
-        p  = extract_lp_params(r)
-        m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
-        img = m.make_image(100.0*ehtim.RADPERUAS, 64)
+    for i in 1:nrow(ms)
+        @info "$(i)/$(nrow(ms))"
+        samples = make_samples(ms[i,:], ss[i,:], mins, maxs, wrapped; nsamples)
+        img0 = make_image(samples[1, :], cp)
+        map(eachrow(samples)[begin+1:end]) do s
+            img = make_image(s, cp)
+            img0.imvec += img.imvec
+            return nothing
+        end
+        img0.imvec = img0.imvec/nrow(samples)
         fname = @sprintf "image_%05d.fits" i
-        img.save_fits(joinpath(outdir, fname))
+        img0.save_fits(joinpath(outdir, fname))
         i += 1
     end
 end
 
-function postprocess(fstack, outdir, linpol=true; burnfrac=0.1, nsamples=100)
+function postprocess(fstack, outdir, prior, cirpol=true; burnfrac=0.1, nsamples=100)
     df = CSV.File(fstack) |> DataFrame
     nstart = floor(Int, nrow(df)*burnfrac)
     step = floor(Int, (nrow(df) - nstart)/(nsamples))
@@ -109,8 +119,8 @@ function postprocess(fstack, outdir, linpol=true; burnfrac=0.1, nsamples=100)
     @info length(nrange)
     dfsub = df[nrange, :]
     ms, ss = construct_meanstd(dfsub)
-    linpol  &&(@info "Using Linpol"; return sample_images_lp(outdir, ms))
-    !linpol &&(@info "Using Cirpol"; return sample_images_cp(outdir, ms))
+    @info "Is this a circular polarized stacking: $(cirpol)"
+    return sample_images(outdir, ms, ss, prior, cp)
 end
 
 """
@@ -120,6 +130,7 @@ end
 
 -  `s`: The path to the csv file of the stacking results
 -  `o`: The directory where you want to save the images
+-  `p`: The prior file used in the stacking procedure
 
 # Flags
 
@@ -132,6 +143,6 @@ end
 
 
 """
-@main function main(s::String, o::String; circ::Bool=false, nsamples::Int=500)
-    postprocess(s, o, !(circ); nsamples=nsamples)
+@main function main(s::String, o::String, p::String; circ::Bool=false, nsamples::Int=500)
+    postprocess(s, o, p, circ; nsamples=nsamples)
 end
