@@ -41,12 +41,14 @@ function extract_cp_params(x::DataFrameRow)
 
     ilistcp_re = findall(x->occursin(r"betacpol\d-re",x), names(x))
     ilistcp_im = findall(x->occursin(r"betacpol\d-im",x), names(x))
-    beta_list_cpol_re = Tables.getcolumn.(Ref(x), ilistcp_re)
-    beta_list_cpol_im = Tables.getcolumn.(Ref(x), ilistcp_im)
-    beta_list_cpol = complex.(beta_list_cpol_re, beta_list_cpol_im)
+    beta_list_pol_re = Tables.getcolumn.(Ref(x), ilistcp_re)
+    beta_list_pol_im = Tables.getcolumn.(Ref(x), ilistcp_im)
+    beta_list_pol = complex.(beta_list_pol_re, beta_list_pol_im)
+    # There is a constant offset
+    prepend!(beta_list_pol, [-0.0114])
 
     alpha = Tables.getcolumn(x, :alpha)
-    return (; d, x0, y0, beta_list, beta_list_cpol, alpha)
+    return (; d, x0, y0, beta_list, beta_list_pol, alpha)
 end
 
 
