@@ -41,14 +41,14 @@ function extract_cp_params(x::DataFrameRow)
 
     ilistcp_re = findall(x->occursin(r"betacpol\d-re",x), names(x))
     ilistcp_im = findall(x->occursin(r"betacpol\d-im",x), names(x))
-    beta_list_pol_re = Tables.getcolumn.(Ref(x), ilistcp_re)
-    beta_list_pol_im = Tables.getcolumn.(Ref(x), ilistcp_im)
-    beta_list_pol = complex.(beta_list_pol_re, beta_list_pol_im)
+    beta_list_cpol_re = Tables.getcolumn.(Ref(x), ilistcp_re)
+    beta_list_cpol_im = Tables.getcolumn.(Ref(x), ilistcp_im)
+    beta_list_cpol = complex.(beta_list_cpol_re, beta_list_cpol_im)
     # There is a constant offset
-    prepend!(beta_list_pol, [-0.0114])
+    prepend!(beta_list_cpol, [-0.0114])
 
     alpha = Tables.getcolumn(x, :alpha)
-    return (; d, x0, y0, beta_list, beta_list_pol, alpha)
+    return (; d, x0, y0, beta_list, beta_list_cpol, alpha)
 end
 
 
@@ -85,10 +85,11 @@ function make_image(r, cp)
     m = ehtim.model.Model()
     p  = if cp
             extract_cp_params(r)
+            m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_cpol=p.beta_list_cpol)
         else
             extract_lp_params(r)
+            m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
         end
-    m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
     img = m.make_image(100.0*ehtim.RADPERUAS, 64)
     return img
 end
