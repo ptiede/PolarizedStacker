@@ -78,12 +78,13 @@ end
 
 function make_image(r, cp)
     m = ehtim.model.Model()
-    p  = if cp
-            extract_cp_params(r)
-        else
-            extract_lp_params(r)
-        end
-    m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
+    if cp
+        p = extract_cp_params(r)
+        m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_cpol=p.beta_list_cpol)
+    else
+        p = extract_lp_params(r)
+        m = m.add_thick_mring(1.0, p.d*ehtim.RADPERUAS, p.alpha*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, 0.0*ehtim.RADPERUAS, beta_list=p.beta_list, beta_list_pol=p.beta_list_pol)
+    end
     img = m.make_image(100.0*ehtim.RADPERUAS, 64)
     return img
 end
@@ -102,13 +103,15 @@ function sample_images(outdir, ms, ss, prior_file, cp; nsamples=500)
     for i in 1:nrow(ms)
         @info "$(i)/$(nrow(ms))"
         samples = make_samples(ms[i,:], ss[i,:], mins, maxs, wrapped; nsamples)
-        img0 = make_image(samples[1, :], cp)
-        map(eachrow(samples)[begin+1:end]) do s
+        img_i, img_q, img_u, img_v = mapreduce(.+,eachrow(samples)) do s
             img = make_image(s, cp)
-            img0.imvec += img.imvec
-            return nothing
+            return img.imvec, img.qvec, img.uvec, img.vvec
         end
-        img0.imvec = img0.imvec/nrow(samples)
+        img0 = make_image(samples[1,:], cp)
+        img0.imvec = img_i/nsamples
+        img0.qvec = img_q/nsamples
+        img0.uvec = img_u/nsamples
+        img0.vvec = img_v/nsamples
         fname = @sprintf "image_%05d.fits" i
         img0.save_fits(joinpath(outdir, fname))
         i += 1
