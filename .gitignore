@@ -33,6 +33,7 @@ LPTest
 results
 Data/teststack
 Data/
+Old/
 ./Data
 TestLinPol
 TestImages

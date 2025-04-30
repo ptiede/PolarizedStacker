@@ -10,16 +10,33 @@ using BlackBoxOptim
 using RobustAdaptiveMetropolisSampler
 using CSV, DataFrames
 using TypedTables
+using VLBIImagePriors
+using LogDensityProblems
 
-function make_marginal(μ::T, σ::T, min, max, wrap) where {T}
+const WT = Union{Truncated{EHTModelStacker.NormalFast{Float64}, Continuous, Float64, Float64, Float64}, DiagonalVonMises{Float64, Float64, Float64}}
+
+struct SnapshotTarget{F,T}
+    f::F
+    ndim::T
+end
+
+(f::SnapshotTarget)(x) = f.f(x)
+
+LogDensityProblems.logdensity(d::SnapshotTarget, x) = d.f(x)
+LogDensityProblems.dimension(d::SnapshotTarget) = d.ndim
+LogDensityProblems.capabilities(::Type{<:SnapshotTarget}) = LogDensityProblems.LogDensityOrder{0}()
+
+function make_marginal2(μ::T, σ::T, min, max, wrap)::WT where {T}
     μT,σT,minT,maxT = promote(μ, σ, min, max)
-    !wrap && return truncated(EHTModelStacker.NormalFast(μT, σT), minT, maxT)
+    !wrap && return truncated(EHTModelStacker.NormalFast(μT, σT), minT, maxT)::WT
+    return DiagonalVonMises(μT, inv(σT^2))::WT
 end
 
 
 function EHTModelStacker.SnapshotWeights(θ, mins, maxs, wrapped, batchsize)
     μ, σ = θ.μ, θ.σ
-    dists = make_marginal.(μ,σ, mins, maxs, wrapped)
+    dists = Vector{WT}(undef, length(μ))
+    dists .= make_marginal2.(μ,σ, mins, maxs, wrapped)
     #dists = EHTModelStacker.NormalFast.(μ, σ)
     transition = EHTModelStacker.MyProduct(dists)#EHTModelStacker.MvNormalFast(μ, Σ.^2)
     prior = EHTModelStacker.MvUniform(mins, maxs)
@@ -151,17 +168,18 @@ function process(
 
 
     t = ascube(prior)
-    f = let t=t
+    ff = let t=t, l=l
         x-> begin
             any(x->(x<(0)||x>1), x) && return -1e300
             l(HypercubeTransform.transform(t, x))
         end
     end
+    f = SnapshotTarget(ff, dimension(t))
 
     if !restart || !isfile(ckptfile)
 
         xopts, l0s = best_image(f, t; ntrials, maxiters)
-        println("After 2 runs the estiamte maps are $(first.(l0s))")
+        println("After 2 runs the estimated logdensity of the MAP estimate are $(first.(l0s))")
         p0 = first(xopts)
 
         if ckpt_stride > nsteps
