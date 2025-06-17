@@ -91,7 +91,7 @@ end
 
 function make_samples(m, s, mins, maxs, wrapped; nsamples=100)
     name  = Symbol.(names(m))
-    dists = make_marginal.(Tuple(m), Tuple(s), mins, maxs, wrapped)
+    dists = make_marginal2.(Tuple(m), Tuple(s), mins, maxs, wrapped)
     return DataFrame([NamedTuple{Tuple(name)}(Tuple(rand.(dists))) for _ in 1:nsamples])
 end
 
