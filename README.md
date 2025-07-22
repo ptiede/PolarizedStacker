@@ -6,7 +6,7 @@ This package will read in a number of eht-imaging snapshot files and stack the p
 
 ## Installation
 
-To install this package you need to first have a local version of Julia. To install Julia I recommend the juliaup package https://github.com/JuliaLang/juliaup and installing the Julia 1.8 series `juliaup add 1.8.5`. Once Julia is installed clone the repo and you should be good to go.
+To install this package you need to first have a local version of Julia. To install Julia I recommend the juliaup package https://github.com/JuliaLang/juliaup and installing the Julia 1.10 series `juliaup add lts`. Once Julia is installed clone the repo and you should be good to go.
 
 ## Running the script
 
