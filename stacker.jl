@@ -124,12 +124,18 @@ function read_prior_table(file)
     header[1] = split(header[1])[2]
     header[2] = split(header[2])[2]
     header[3] = split(header[3])[1]
+    if length(header) > 6
+        header[end-1] = split(header[end-1])[1]
+    end
     header[end] = split(header[end])[1]
     header .= rstrip.(lstrip.(header))
-    df = CSV.File(file, header=header, skipto=2, delim=' ')
-    # df[!,:name] = Symbol.(df.name)
+    df = CSV.read(file, DataFrame, header=header, skipto=2, delim=' ')
     df = DataFrame(df)
+    if !hasproperty(df, :restrict)
+        df.restrict = fill("n", nrow(df))
+    end
     df.angular = map(x->ifelse(x=="n", false, true), df.angular)
+    df.restrict = map(x->ifelse(x=="n", false, true), df.restrict)
     df.name = Symbol.(df.name)
     return df
 end
