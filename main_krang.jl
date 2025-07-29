@@ -9,7 +9,7 @@ using Pkg; Pkg.activate(filedir)
 # Pkg.instantiate()
 # Pkg.precompile()
 
-
+Pkg.precompile()
 include(joinpath(filedir, "stacker.jl"))
 include(joinpath(filedir, "res_to_chainh5.jl"))
 

@@ -1,7 +1,6 @@
 using EHTModelStacker
 using DelimitedFiles
 using Distributions
-using ParameterHandling
 using HypercubeTransform
 import HypercubeTransform as HC
 using StatsBase
@@ -63,9 +62,16 @@ end
 function create_lklhd(cfile, prior_file; nbatch=1000)
     chain = ChainH5(cfile; nsamples=1024)
     prior = read_prior_table(prior_file,)
-    mins, maxs, wrapped = extract_prior(prior, chain.names)
+    mins, maxs, wrapped, restrict = extract_prior(prior, chain.names)
     l = BatchStackerLklhd(chain, mins, maxs, wrapped, nbatch)
-    prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Uniform.(0.0, 10*(maxs-mins))))
+    σl = map(mins, maxs, restrict) do ml, mu, r
+        if r
+            return 0.01*(mu - ml)
+        else
+            return 2.0*(mu - ml)
+        end
+    end
+    prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Uniform.(0.0, σl)))
 
     return l, prior, keys(chain)
 end
@@ -104,6 +110,7 @@ function extract_prior(df, names)
     min  = Float64[]
     max  = Float64[]
     wrap = Bool[]
+    restrict = Bool[]
 
     for n in names
         i = findall(==(n), df.name)
@@ -111,9 +118,10 @@ function extract_prior(df, names)
         push!(min, df.min[first(i)])
         push!(max, df.max[first(i)])
         push!(wrap, df.angular[first(i)])
+        push!(restrict, df.restrict[first(i)])
     end
 
-    return min, max, wrap
+    return min, max, wrap, restrict
 end
 
 
