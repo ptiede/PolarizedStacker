@@ -1,12 +1,10 @@
 using EHTModelStacker
 using DelimitedFiles
 using Distributions
-using HypercubeTransform
 import HypercubeTransform as HC
+using HypercubeTransform: ascube, dimension
 using StatsBase
 using JLD2
-using BlackBoxOptim
-using RobustAdaptiveMetropolisSampler
 using CSV, DataFrames
 using TypedTables
 using VLBIImagePriors
@@ -31,15 +29,26 @@ function make_marginal2(μ::T, σ::T, min, max, wrap)::WT where {T}
     return DiagonalVonMises(μT, inv(σT^2))::WT
 end
 
+struct _SnapshotTransform{T, L}
+    t::T
+    l::L
+end
 
-function EHTModelStacker.SnapshotWeights(θ, mins, maxs, wrapped, batchsize)
+function (st::_SnapshotTransform)(x)
+    any(x->(x<(0)||x>1), x) && return -1e300
+    return st.l(HC.transform(st.t, x))
+end
+
+
+
+function EHTModelStacker.SnapshotWeights(θ, mins, maxs, wrapped, batchsize; scheduler=:serial)
     μ, σ = θ.μ, θ.σ
     dists = Vector{WT}(undef, length(μ))
     dists .= make_marginal2.(μ,σ, mins, maxs, wrapped)
     #dists = EHTModelStacker.NormalFast.(μ, σ)
     transition = EHTModelStacker.MyProduct(dists)#EHTModelStacker.MvNormalFast(μ, Σ.^2)
     prior = EHTModelStacker.MvUniform(mins, maxs)
-    return SnapshotWeights(transition, prior, batchsize)
+    return SnapshotWeights(transition, prior, batchsize, scheduler)
 end
 
 struct BatchStackerLklhd{C, T, B}
@@ -48,27 +57,28 @@ struct BatchStackerLklhd{C, T, B}
     max::T
     wrapped::B
     batchsize::Int
+    scheduler::Symbol
 end
 
 
 
 
 function (l::BatchStackerLklhd)(θ)
-    ws = SnapshotWeights(θ, l.min, l.max, l.wrapped, l.batchsize)
+    ws = SnapshotWeights(θ, l.min, l.max, l.wrapped, l.batchsize; scheduler = l.scheduler)
     lapprox = lpdf(ws, l.chain)
     return lapprox
 end
 
-function create_lklhd(cfile, prior_file; nbatch=1000)
+function create_lklhd(cfile, prior_file; nbatch=1000, scheduler=:serial)
     chain = ChainH5(cfile; nsamples=1024)
     prior = read_prior_table(prior_file,)
     mins, maxs, wrapped, restrict = extract_prior(prior, chain.names)
-    l = BatchStackerLklhd(chain, mins, maxs, wrapped, nbatch)
+    l = BatchStackerLklhd(chain, mins, maxs, wrapped, nbatch, scheduler)
     σl = map(mins, maxs, restrict) do ml, mu, r
         if r
-            return 0.01*(mu - ml)
+            return 0.1*(mu - ml)
         else
-            return 2.0*(mu - ml)
+            return 10.0*(mu - ml)
         end
     end
     prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Uniform.(0.0, σl)))
@@ -125,6 +135,7 @@ function extract_prior(df, names)
 end
 
 
+
 function read_prior_table(file)
     header = open(file, "r") do io
         String.(split(readline(io), ","))
@@ -146,100 +157,4 @@ function read_prior_table(file)
     df.restrict = map(x->ifelse(x=="n", false, true), df.restrict)
     df.name = Symbol.(df.name)
     return df
-end
-
-
-function best_image(l, t; ntrials=10, maxiters=70_000)
-    ndim = dimension(t)
-    fopt(x) = -l(x)
-    sols = map(1:ntrials) do i
-        sol = bboptimize(fopt; SearchRange = (0.01, 0.99), NumDimensions = ndim, MaxFuncEvals=maxiters, TraceMode=:silent)
-        xopt = best_candidate(sol)
-        mini = best_fitness(sol)
-        @info "Best image $i/$(ntrials) done: minimum: $(mini)"
-        return xopt
-    end
-    lmaps = l.(sols)
-    inds = sortperm(lmaps, rev=true)
-    return sols[inds], lmaps[inds]
-end
-
-
-function process(
-        cfile, prior_file, outdir;
-        ntrials = 10, maxiters=70_000,
-        restart=false, ckpt_stride=50_000,
-        stride=10, nbatch=1_000, nsteps=2_000_000
-                )
-
-    mkpath(outdir)
-    ckptfile = joinpath(outdir, replace(basename(cfile), ".h5"=>"_ckpt.jld2"))
-    chainfile = joinpath(outdir, replace(basename(cfile), ".h5"=>"_ha_trunc.csv"))
-    nbatches = nsteps÷ckpt_stride
-
-    l, prior, k = create_lklhd(cfile, prior_file; nbatch=nbatch)
-
-
-
-    t = ascube(prior)
-    ff = let t=t, l=l
-        x-> begin
-            any(x->(x<(0)||x>1), x) && return -1e300
-            l(HypercubeTransform.transform(t, x))
-        end
-    end
-    f = SnapshotTarget(ff, dimension(t))
-
-    if !restart || !isfile(ckptfile)
-
-        xopts, l0s = best_image(f, t; ntrials, maxiters)
-        println("After 2 runs the estimated logdensity of the MAP estimate are $(first.(l0s))")
-        p0 = first(xopts)
-
-        if ckpt_stride > nsteps
-            println("Checkpoint stide > nsteps resetting")
-            ckpt_stride = nsteps
-        end
-        Minit = 0.001#[0.01*(maxs .- mins)..., 0.001*(maxs .- mins)...]
-        smplr = RAM(p0, Minit)
-        chain = @timed sample(f, smplr, ckpt_stride; show_progress=false, output_log_probability_x=true)
-        c = [HC.transform(t, chain.value.chain[i,:]) for i in axes(chain.value.chain, 1)]
-        tv    = Table(c)
-        state = chain.value.state
-        logp  = chain.value.log_probabilities_x
-        # Starting checkpoint
-        saveckpt(ckptfile, state, tv, logp, k)
-        println("Done batch 1 this took $(chain.time) seconds")
-        println("I am guessing this entire run will take $(chain.time*nbatches/3600.0) hours to finish")
-        write_results(chainfile, tv, logp, k)
-        nstart=2
-    else
-        ckpt = readckpt(ckptfile)
-        state = ckpt["smplr"]
-        tv    = ckpt["tv"]
-        logp  = ckpt["logp"]
-        @show typeof(state)
-        nstart = length(tv)÷ckpt_stride + 1
-        @info "Reading in checkpoint file $(ckptfile)"
-        @info "According to checkpoint I am on batch $(nstart)"
-    end
-
-    for i in nstart:nbatches
-        println("On batch $i/$nbatches")
-        # We are early so lets speed up the learning
-        if i < nbatches÷2
-            state = RAM(state.x, state.M.mat; step=1)
-        end
-        tv_b,_,state_b,logp_b = sample(f, state, ckpt_stride; show_progress=false, output_log_probability_x=true)
-
-        #extend results and set up next run
-        c_b = [HC.transform(t, tv_b[i,:]) for i in axes(tv_b, 1)]
-        tv    = vcat(tv, Table(c_b))
-        logp  = vcat(logp, logp_b)
-        state = state_b
-        println("Writing checkpoint")
-        saveckpt(ckptfile, state, tv, logp, k)
-        write_results(chainfile, tv, logp, k, stride=stride)
-    end
-
 end

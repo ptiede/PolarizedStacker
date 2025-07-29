@@ -2,6 +2,7 @@
 AbstractMCMC = "80f14c24-f653-4e6a-9b94-39d6b0f70001"
 BlackBoxOptim = "a134a8b2-14d6-55f6-9291-3336d3ab0209"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Comonicon = "863f3e99-da2a-4334-8734-de3dacbe5542"
 CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
