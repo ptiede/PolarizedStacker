@@ -40,7 +40,7 @@ Runs the stacker on the list of dirs passed as a command line argument
 
 """
 @main function main(d::String, p::String; output::String=dirname(d), restart::Bool=false, 
-                    nrounds::Int=11, nchains::Int=24)
+                    nrounds::Int=11, nchains::Int=10)
     @info "Reading chain $(d)"
     @info "Using prior file $(p)"
     process_pigeons(d, p, output; restart, nchains, nrounds)

@@ -52,7 +52,7 @@ function process_pigeons(
 
         trace = dropdims(sample_array(pt); dims=3)[:, 1:end-1]
         tv = HC.transform.(Ref(t), eachrow(trace)) |> Table
-        logp = l.(eachrow(tv))
+        logp = l.(tv)
         write_results(chainfile, tv, logp, k)
     else
         @info "Resuming from checkpoint"
