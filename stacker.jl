@@ -70,18 +70,18 @@ function (l::BatchStackerLklhd)(θ)
 end
 
 function create_lklhd(cfile, prior_file; nbatch=1000, scheduler=:serial)
-    chain = ChainH5(cfile; nsamples=1024)
+    chain = ChainH5(cfile; nsamples=5000)
     prior = read_prior_table(prior_file,)
     mins, maxs, wrapped, restrict = extract_prior(prior, chain.names)
     l = BatchStackerLklhd(chain, mins, maxs, wrapped, nbatch, scheduler)
     σl = map(mins, maxs, restrict) do ml, mu, r
         if r
-            return 0.1*(mu - ml)
+            return (mu - ml)/20
         else
-            return 10.0*(mu - ml)
+            return (mu - ml)/2
         end
     end
-    prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Uniform.(0.0, σl)))
+    prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Exponential.(σl)))
 
     return l, prior, keys(chain)
 end
