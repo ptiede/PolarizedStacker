@@ -76,9 +76,9 @@ function create_lklhd(cfile, prior_file; nbatch=1000, scheduler=:serial)
     l = BatchStackerLklhd(chain, mins, maxs, wrapped, nbatch, scheduler)
     σl = map(mins, maxs, restrict) do ml, mu, r
         if r
-            return (mu - ml)/20
+            return (mu - ml)/10
         else
-            return (mu - ml)/2
+            return (mu - ml)
         end
     end
     prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Exponential.(σl)))
