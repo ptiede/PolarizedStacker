@@ -28,5 +28,5 @@ TypedTables = "9d95f2ec-7b3d-5a63-8d20-e2491e220bb9"
 VLBIImagePriors = "b1ba175b-8447-452c-b961-7db2d6f7a029"
 
 [compat]
-DimensionalData = "≤0.29.24"
-IntervalSets = "≤0.7.11"
+DimensionalData = "0.29 - 0.29.24, ^0.29.26"
+IntervalSets = "0.6, 0.7 - 0.7.11, ^0.7.13"
