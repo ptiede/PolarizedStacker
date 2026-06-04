@@ -3,7 +3,8 @@ const filedir = @__DIR__
 @info "Using $(Threads.nthreads()) threads"
 
 
-using Pkg; Pkg.activate(filedir)
+using Pkg;
+Pkg.activate(filedir);
 # Pkg.add(url="https://github.com/ptiede/EHTModelStacker.jl")
 # Pkg.add(url="https://github.com/ptiede/RobustAdaptiveMetropolisSampler.jl")
 # Pkg.instantiate()
@@ -39,8 +40,8 @@ Runs the stacker on the list of dirs passed as a command line argument
 - `-r, --restart`: A flag that says to restart the analysis from the ckpt file
 
 """
-@main function main(d::String, p::String; output::String=dirname(d), restart::Bool=false, 
-                    nrounds::Int=11, nchains::Int=10)
+@main function main(d::String, p::String; output::String=dirname(d), restart::Bool=false,
+    nrounds::Int=11, nchains::Int=16)
     @info "Reading chain $(d)"
     @info "Using prior file $(p)"
     process_pigeons(d, p, output; restart, nchains, nrounds)
