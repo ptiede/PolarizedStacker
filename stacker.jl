@@ -81,7 +81,7 @@ function create_lklhd(cfile, prior_file; nbatch=1000, scheduler=:serial)
             return (mu - ml)
         end
     end
-    prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Exponential.(σl)))
+    prior = (μ = Product(Uniform.(mins, maxs)), σ = Product(Uniform.(0.0, σl)))
 
     return l, prior, keys(chain)
 end

@@ -21,12 +21,13 @@ end
 
 include(joinpath(filedir, "stacker.jl"))
 include(joinpath(filedir, "res_to_chainh5.jl"))
+include(joinpath(filedir, "process.jl"))
 
 
 
 @everywhere include(joinpath(filedir, "stacker.jl"))
 @everywhere include(joinpath(filedir, "res_to_chainh5.jl"))
-
+@everywhere include(joinpath(filedir, "process.jl"))
 
 function make_h5(dir)
     make_hdf5_chain(dirname(dir), joinpath(dir, "stacker_chain.h5"))
